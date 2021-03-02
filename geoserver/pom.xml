@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>de.incentergy.iso11783.part10</groupId>
+	<artifactId>geoserver</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<packaging>war</packaging>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
+		<geoserver.version>2.18.2</geoserver.version>
+		<failOnMissingWebXml>false</failOnMissingWebXml>
+		<sonar.skip>true</sonar.skip>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.geoserver.web</groupId>
+			<artifactId>gs-web-app</artifactId>
+			<type>war</type>
+			<version>${geoserver.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.geoserver.extension</groupId>
+			<artifactId>gs-web-wps</artifactId>
+			<version>${geoserver.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.geoserver.extension/gs-vectortiles -->
+		<dependency>
+			<groupId>org.geoserver.extension</groupId>
+			<artifactId>gs-vectortiles</artifactId>
+			<version>${geoserver.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>de.incentergy.iso11783.part10</groupId>
+			<artifactId>geo-tool-iso-11783-part10</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
+	<build>
+		<finalName>${project.artifactId}</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0-M1</version>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>10.0.1</version>
+				<configuration>
+					<scanIntervalSeconds>10</scanIntervalSeconds>
+					<connectors>
+						<connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
+							<port>8080</port>
+							<maxIdleTime>60000</maxIdleTime>
+						</connector>
+					</connectors>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<repositories>
+		<repository>
+			<id>osgeo-releases</id>
+			<name>OSGeo Nexus Release Repository</name>
+			<url>https://repo.osgeo.org/repository/release/</url>
+			<!-- contains release (including third-party-dependences) -->
+			<!-- Restlet maven Repository (http://maven.restlet.org) -->
+			<!-- ucar (https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases) -->
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+		</repository>
+	</repositories>
+</project>
