@@ -15,7 +15,6 @@
 		<geoserver.version>2.18.2</geoserver.version>
 		<failOnMissingWebXml>false</failOnMissingWebXml>
 		<sonar.skip>true</sonar.skip>
-		<geoserver.transform.file>src/assembly/geoserver-web-xml-processor.xml</geoserver.transform.file>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -50,106 +49,21 @@
 				<version>3.0.0-M1</version>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.1.0</version>
-				<executions>
-					<execution>
-						<id>unpack</id>
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>unpack</goal>
-						</goals>
-						<configuration>
-							<artifactItems>
-								<artifactItem>
-									<groupId>org.geoserver.web</groupId>
-									<artifactId>gs-web-app</artifactId>
-									<version>${geoserver.version}</version>
-									<type>war</type>
-									<!-- do not unpack spring dependencies -->
-									<excludes>**/spring*.jar</excludes>
-								</artifactItem>
-							</artifactItems>
-							<!-- do not unpack spring dependencies -->
-							<excludes>**/spring*.jar</excludes>
-							<outputDirectory>${project.build.directory}/wars</outputDirectory>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>com.google.code.maven-config-processor-plugin</groupId>
-				<artifactId>maven-config-processor-plugin</artifactId>
-				<version>2.0</version>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>10.0.1</version>
 				<configuration>
-					<!-- configure to transform file ${project.build.directory}/wars/WEB-INF/web.xml 
-						into ${project.build.directory}/transformed/web.xml -->
-					<transformations>
-						<transformation>
-							<input>${project.build.directory}/wars/WEB-INF/web.xml</input>
-							<output>transformed/web.xml</output>
-							<config>${geoserver.transform.file}</config>
-						</transformation>
-					</transformations>
+					<scanIntervalSeconds>10</scanIntervalSeconds>
+					<connectors>
+						<connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
+							<port>8080</port>
+							<maxIdleTime>60000</maxIdleTime>
+						</connector>
+					</connectors>
 				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>process</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-war-plugin</artifactId>
-				<version>3.2.0</version>
-				<configuration>
-					<warSourceDirectory>${project.build.directory}/wars</warSourceDirectory>
-					<webXml>${project.build.directory}/transformed/web.xml</webXml>
-					<webResources>
-						<resource>
-							<!-- this is relative to the pom.xml directory -->
-							<directory>src/main/webapp</directory>
-						</resource>
-					</webResources>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.wildfly.plugins</groupId>
-				<artifactId>wildfly-maven-plugin</artifactId>
-				<version>1.0.2.Final</version>
 			</plugin>
 		</plugins>
 	</build>
-	<profiles>
-		<profile>
-			<id>windows-profile</id>
-			<activation>
-				<os>
-					<family>Windows</family>
-				</os>
-			</activation>
-			<properties>
-				<geoserver.transform.file>src/assembly/geoserver-web-xml-processor-windows.xml</geoserver.transform.file>
-			</properties>
-		</profile>
-		<profile>
-			<id>without-jai</id>
-			<build>
-				<plugins>
-					<plugin>
-						<artifactId>maven-war-plugin</artifactId>
-						<version>3.2.2</version>
-						<configuration>
-							<packagingExcludes>WEB-INF/lib/jai_core-1.1.3.jar,WEB-INF/lib/jai_codec-1.1.3.jar,WEB-INF/lib/jai_imageio-1.1.jar</packagingExcludes>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 	<repositories>
 		<repository>
 			<id>osgeo-releases</id>
