@@ -34,8 +34,6 @@ import org.geoserver.catalog.impl.LayerInfoImpl;
 import org.geoserver.catalog.impl.WorkspaceInfoImpl;
 import org.geoserver.web.GeoServerApplication;
 
-import de.incentergy.iso11783.part10.geoserver.spring.SpringContext;
-
 public class ServletSecurityFilter implements Filter {
 
     private static Logger log = Logger.getLogger(ServletSecurityFilter.class.getName());
