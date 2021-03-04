@@ -28,9 +28,11 @@ import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.LayerInfo;
 import org.geoserver.catalog.PublishedType;
 import org.geoserver.catalog.WorkspaceInfo;
+import org.geoserver.catalog.impl.CatalogImpl;
 import org.geoserver.catalog.impl.DataStoreInfoImpl;
 import org.geoserver.catalog.impl.LayerInfoImpl;
 import org.geoserver.catalog.impl.WorkspaceInfoImpl;
+import org.geoserver.web.GeoServerApplication;
 
 import de.incentergy.iso11783.part10.geoserver.spring.SpringContext;
 
@@ -49,8 +51,10 @@ public class ServletSecurityFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         if (request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
-            // only do validation if we are in the webdav data folder
-            if (!((HttpServletRequest) request).getRequestURI().startsWith("/web")) {
+            HttpServletRequest httpServletRequest = ((HttpServletRequest) request);
+        	String contextPath = httpServletRequest.getContextPath();
+        	// only do validation if we are in a workspace folder
+            if (!httpServletRequest.getRequestURI().startsWith(contextPath+"/web") && !httpServletRequest.getRequestURI().startsWith(contextPath+"/j_spring_security_check")) {
                 String authHeaderVal = ((HttpServletRequest) request).getHeader("Authorization");
                 log.fine("JWTAuthFilter.authHeaderVal: " + authHeaderVal);
                 if (authHeaderVal != null && authHeaderVal.startsWith("Bearer")) {
@@ -59,7 +63,7 @@ public class ServletSecurityFilter implements Filter {
                         DecodedJWT jwtPrincipal = validate(bearerToken);
                         Claim arExternal_Id = jwtPrincipal.getClaim("ar_externalId");
                         if (!arExternal_Id.isNull() && !((HttpServletRequest) request).getRequestURI()
-                                .startsWith("/" + arExternal_Id.asString())) {
+                                .startsWith(contextPath + "/" + arExternal_Id.asString())) {
                             ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                         } else {
                             log.fine("Success\n");
@@ -90,8 +94,11 @@ public class ServletSecurityFilter implements Filter {
     }
 
     private void checkOrSetUpGeoServerWorkspaceStoreAndLayer(String workspaceName, String layerName, String bearerToken) {
-        Catalog catalog = SpringContext.getBean(Catalog.class);
+        Catalog catalog = new CatalogImpl();
         WorkspaceInfo workspaceInfo = catalog.getWorkspaceByName(workspaceName);
+        if(workspaceName == null) {
+        	workspaceName = "null";
+        }
         // check if workspace exists
         if (workspaceInfo == null) {
             // create workspace
@@ -102,6 +109,7 @@ public class ServletSecurityFilter implements Filter {
             try {
                 // create data store
                 DataStoreInfo dataStoreInfo = new DataStoreInfoImpl(catalog, "ISOXML");
+                dataStoreInfo.setName("ISOXML");
                 dataStoreInfo.getConnectionParameters().put("isoxmlUrl", new URL(webDavRoot + workspaceName));
                 dataStoreInfo.getConnectionParameters().put("authorization_header_bearer", bearerToken);
                 dataStoreInfo.setEnabled(true);
@@ -116,9 +124,10 @@ public class ServletSecurityFilter implements Filter {
         // check if layers exists
         if(layerInfo == null) {
             LayerInfo layer = new LayerInfoImpl();
-            FeatureTypeInfo featureType = catalog.getFeatureTypeByName(layerName);
+            String typeName = layerName.split(":")[1];
+            FeatureTypeInfo featureType = catalog.getFeatureTypeByName(typeName);
             layer.setResource(featureType);
-            layer.setName(layerName.split(":")[1]);
+            layer.setName(typeName);
             layer.setType(PublishedType.VECTOR);
             layer.setEnabled(true);
             catalog.add(layer);
