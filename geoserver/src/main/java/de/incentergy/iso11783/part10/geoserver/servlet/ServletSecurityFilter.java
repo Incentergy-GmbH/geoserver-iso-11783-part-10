@@ -68,7 +68,7 @@ public class ServletSecurityFilter implements Filter {
                             String layers = ((HttpServletRequest) request).getParameter("layers");
                             String typeName = ((HttpServletRequest) request).getParameter("typeName");
 
-                            checkOrSetUpGeoServerWorkspaceStoreAndLayer(arExternal_Id.asString(),
+                            checkOrSetUpGeoServerWorkspaceStoreAndLayer("u"+arExternal_Id.asString(),
                                     layers != null ? layers : typeName, bearerToken);
 
                             chain.doFilter(request, response);
