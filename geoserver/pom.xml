@@ -16,6 +16,7 @@
 		<failOnMissingWebXml>false</failOnMissingWebXml>
 		<sonar.skip>true</sonar.skip>
 		<geoserver.transform.file>src/assembly/geoserver-web-xml-processor.xml</geoserver.transform.file>
+		<geoserver-tomcat-cors.transform.file>src/assembly/geoserver-tomcat-cors-web-xml-processor.xml</geoserver-tomcat-cors.transform.file>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -124,6 +125,51 @@
 									<input>${project.build.directory}/wars/WEB-INF/web.xml</input>
 									<output>transformed/web.xml</output>
 									<config>${geoserver.transform.file}</config>
+								</transformation>
+							</transformations>
+						</configuration>
+						<executions>
+							<execution>
+								<goals>
+									<goal>process</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-war-plugin</artifactId>
+						<version>3.2.0</version>
+						<configuration>
+							<warSourceDirectory>${project.build.directory}/wars</warSourceDirectory>
+							<webXml>${project.build.directory}/transformed/web.xml</webXml>
+							<webResources>
+								<resource>
+									<!-- this is relative to the pom.xml directory -->
+									<directory>src/main/webapp</directory>
+								</resource>
+							</webResources>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>tomcat-cors</id>
+			<build>
+				<plugins>
+				<plugin>
+						<groupId>com.google.code.maven-config-processor-plugin</groupId>
+						<artifactId>maven-config-processor-plugin</artifactId>
+						<version>2.0</version>
+						<configuration>
+							<!-- configure to transform file ${project.build.directory}/wars/WEB-INF/web.xml 
+								into ${project.build.directory}/transformed/web.xml -->
+							<transformations>
+								<transformation>
+									<input>${project.build.directory}/wars/WEB-INF/web.xml</input>
+									<output>transformed/web.xml</output>
+									<config>${geoserver-tomcat-cors.transform.file}</config>
 								</transformation>
 							</transformations>
 						</configuration>
