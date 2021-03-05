@@ -17,4 +17,10 @@ mvn jetty:run
 # Stores -> Add new Store -> ISOXML in Memory
 ```
 
+For enabling cors and using the same workspace all the time you can use the tomcat-cors profile.
+
+```
+mvn -P tomcat-cors install
+```
+
 ![](img/new-data-store.png)

@@ -77,6 +77,35 @@
 					</connectors>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>unpack</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.geoserver.web</groupId>
+									<artifactId>gs-web-app</artifactId>
+									<version>${geoserver.version}</version>
+									<type>war</type>
+									<!-- do not unpack spring dependencies -->
+									<excludes>**/spring*.jar</excludes>
+								</artifactItem>
+							</artifactItems>
+							<!-- do not unpack spring dependencies -->
+							<excludes>**/spring*.jar</excludes>
+							<outputDirectory>${project.build.directory}/wars</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 	<profiles>
@@ -84,35 +113,6 @@
 			<id>JWT</id>
 			<build>
 				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-dependency-plugin</artifactId>
-						<version>3.1.0</version>
-						<executions>
-							<execution>
-								<id>unpack</id>
-								<phase>generate-resources</phase>
-								<goals>
-									<goal>unpack</goal>
-								</goals>
-								<configuration>
-									<artifactItems>
-										<artifactItem>
-											<groupId>org.geoserver.web</groupId>
-											<artifactId>gs-web-app</artifactId>
-											<version>${geoserver.version}</version>
-											<type>war</type>
-											<!-- do not unpack spring dependencies -->
-											<excludes>**/spring*.jar</excludes>
-										</artifactItem>
-									</artifactItems>
-									<!-- do not unpack spring dependencies -->
-									<excludes>**/spring*.jar</excludes>
-									<outputDirectory>${project.build.directory}/wars</outputDirectory>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
 					<plugin>
 						<groupId>com.google.code.maven-config-processor-plugin</groupId>
 						<artifactId>maven-config-processor-plugin</artifactId>
