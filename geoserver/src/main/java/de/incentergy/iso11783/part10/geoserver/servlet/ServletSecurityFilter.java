@@ -6,6 +6,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -13,6 +15,7 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -26,6 +29,8 @@ import org.geoserver.catalog.impl.CatalogImpl;
 import org.geoserver.catalog.impl.DataStoreInfoImpl;
 import org.geoserver.catalog.impl.LayerInfoImpl;
 import org.geoserver.catalog.impl.WorkspaceInfoImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.context.support.SpringBeanAutowiringSupport;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
@@ -33,15 +38,22 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
+@WebFilter(urlPatterns = "/*")
 public class ServletSecurityFilter implements Filter {
 
     private static Logger log = Logger.getLogger(ServletSecurityFilter.class.getName());
 
     String jwtSecret = System.getenv("GEOSERVER_JWT_SECRET");
     String webDavRoot = System.getenv("GEOSERVER_WEBDAV_ROOT");
+    
+    Pattern EXTRACT_WORKSPACE_AND_LAYER = Pattern.compile("/service/tms/1\\.0\\.0/([^:]*):([^@]*)@.*");
 
+    @Autowired
+    Catalog catalog;
+    
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
+    	SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
     }
 
     @Override
@@ -59,18 +71,30 @@ public class ServletSecurityFilter implements Filter {
                         String bearerToken = authHeaderVal.substring(7);
                         DecodedJWT jwtPrincipal = validate(bearerToken);
                         Claim arExternal_Id = jwtPrincipal.getClaim("ar_externalId");
-                        if (!arExternal_Id.isNull() && !((HttpServletRequest) request).getRequestURI()
+                        if (!arExternal_Id.isNull() && !httpServletRequest.getRequestURI()
                                 .startsWith(contextPath + "/" + arExternal_Id.asString())) {
                             ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                         } else {
                             log.fine("Success\n");
+                            // Example Url http://localhost:8080/geoserver/gwc/service/tms/1.0.0/u60a6de07-49b4-476c-9361-654955898f55:Partfield_20210305T08_18_27_taskdata@EPSG%3A900913@pbf/14/8539/10995.pbf
+                            if(httpServletRequest.getServletPath().equals("/gwc")) {
+                            	// e.g. /service/tms/1.0.0/u60a6de07-49b4-476c-9361-654955898f55:Partfield_20210305T08_18_27_taskdata@EPSG%3A900913@pbf/14/8539/10995.pbf
+                            	String pathInfo = httpServletRequest.getPathInfo();
+                            	Matcher m = EXTRACT_WORKSPACE_AND_LAYER.matcher(pathInfo);
+                            	if(m.matches()) {
+                            		String workspaceName = m.group(1);
+                            		String layerName = m.group(2);
+                            		checkOrSetUpGeoServerWorkspaceStoreAndLayer(workspaceName,
+                            				layerName, bearerToken);
+                            	}
+                            } else {
+	                            String layers = ((HttpServletRequest) request).getParameter("layers");
+	                            String typeName = ((HttpServletRequest) request).getParameter("typeName");
+	
+	                            checkOrSetUpGeoServerWorkspaceStoreAndLayer("u"+arExternal_Id.asString(),
+	                                    layers != null ? layers : typeName, bearerToken);
 
-                            String layers = ((HttpServletRequest) request).getParameter("layers");
-                            String typeName = ((HttpServletRequest) request).getParameter("typeName");
-
-                            checkOrSetUpGeoServerWorkspaceStoreAndLayer("u"+arExternal_Id.asString(),
-                                    layers != null ? layers : typeName, bearerToken);
-
+                            }
                             chain.doFilter(request, response);
                         }
                     } catch (Exception ex) {
@@ -91,7 +115,6 @@ public class ServletSecurityFilter implements Filter {
     }
 
     private void checkOrSetUpGeoServerWorkspaceStoreAndLayer(String workspaceName, String layerName, String bearerToken) {
-        Catalog catalog = new CatalogImpl();
         WorkspaceInfo workspaceInfo = catalog.getWorkspaceByName(workspaceName);
         if(workspaceName == null) {
         	workspaceName = "null";
@@ -121,13 +144,16 @@ public class ServletSecurityFilter implements Filter {
         // check if layers exists
         if(layerInfo == null) {
             LayerInfo layer = new LayerInfoImpl();
-            String typeName = layerName.split(":")[1];
-            FeatureTypeInfo featureType = catalog.getFeatureTypeByName(typeName);
-            layer.setResource(featureType);
-            layer.setName(typeName);
-            layer.setType(PublishedType.VECTOR);
-            layer.setEnabled(true);
+            FeatureTypeInfo featureType = catalog.getFeatureTypeByName(layerName);
+            if(featureType != null) {
+	            layer.setResource(featureType);
+	            layer.setName(layerName);
+	            layer.setType(PublishedType.VECTOR);
+	            layer.setEnabled(true);
             catalog.add(layer);
+            } else {
+            	log.warning("Did not find featureType: "+layerName);
+            }
         }
     }
 
