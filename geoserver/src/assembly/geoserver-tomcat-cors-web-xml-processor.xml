@@ -23,6 +23,10 @@
 		        <param-value>*</param-value>
 		      </init-param>
 		    </filter>
+		    <filter>
+		      <filter-name>servlet-security</filter-name>
+		      <filter-class>de.incentergy.iso11783.part10.geoserver.servlet.ServletSecurityFilter</filter-class>
+		    </filter>
             ]]></value>
     </add>
     <add>
@@ -32,7 +36,11 @@
             <filter-mapping>
 		        <filter-name>cross-origin</filter-name>
 		        <url-pattern>/*</url-pattern>
-		    </filter-mapping>
-    	]]></value>
+	    </filter-mapping>
+    	    <filter-mapping>
+		        <filter-name>servlet-security</filter-name>
+		        <url-pattern>/*</url-pattern>
+	    </filter-mapping>
+	]]></value>
     </add>
 </processor>
