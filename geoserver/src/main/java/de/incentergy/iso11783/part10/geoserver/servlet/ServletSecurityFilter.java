@@ -1,5 +1,7 @@
 package de.incentergy.iso11783.part10.geoserver.servlet;
 
+import static org.geoserver.gwc.GWC.tileLayerName;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -24,15 +26,23 @@ import org.geoserver.catalog.DataStoreInfo;
 import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.LayerInfo;
 import org.geoserver.catalog.NamespaceInfo;
+import org.geoserver.catalog.ProjectionPolicy;
 import org.geoserver.catalog.PublishedType;
 import org.geoserver.catalog.WorkspaceInfo;
 import org.geoserver.catalog.impl.DataStoreInfoImpl;
 import org.geoserver.catalog.impl.LayerInfoImpl;
 import org.geoserver.catalog.impl.WorkspaceInfoImpl;
+import org.geoserver.gwc.GWC;
+import org.geoserver.gwc.layer.GeoServerTileLayer;
+import org.geoserver.gwc.layer.GeoServerTileLayerInfo;
+import org.geoserver.gwc.layer.GeoServerTileLayerInfoImpl;
 import org.geotools.data.DataAccess;
 import org.geotools.feature.NameImpl;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
+import org.geowebcache.grid.GridSetBroker;
+import org.geowebcache.mime.MimeException;
+import org.geowebcache.mime.MimeType;
 import org.opengis.feature.Feature;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.feature.type.Name;
@@ -184,6 +194,7 @@ public class ServletSecurityFilter implements Filter {
 					featureTypeInfo.setNativeBoundingBox(re);
 					featureTypeInfo.setLatLonBoundingBox(re);
 					featureTypeInfo.setStore(dataStoreInfo);
+					featureTypeInfo.setProjectionPolicy(ProjectionPolicy.NONE);
 					catalog.add(featureTypeInfo);
 					layer.setResource(featureTypeInfo);
 					layer.setName(layerLookup);
@@ -191,6 +202,15 @@ public class ServletSecurityFilter implements Filter {
 					layer.setAdvertised(true);
 					layer.setEnabled(true);
 					catalog.add(layer);
+
+					final GWC gwc = GWC.get();
+					final boolean tileLayerExists = gwc.hasTileLayer(layer);
+					if (tileLayerExists) {
+						GeoServerTileLayer tileLayer = (GeoServerTileLayer) gwc
+								.getTileLayerByName(workspaceName + ":" + layer.getName());
+						tileLayer.getInfo().getMimeFormats().add("application/vnd.mapbox-vector-tile");
+						gwc.save(tileLayer);
+					}
 				} else {
 					log.warning("Did not find featureType: " + layerName);
 				}
