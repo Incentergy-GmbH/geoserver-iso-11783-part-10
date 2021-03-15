@@ -71,6 +71,7 @@ public class ServletSecurityFilter implements Filter {
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
 		SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
+		log.info("ServletSecurityFilter.init GEOSERVER_JWT_SECRET: "+jwtSecret+" GEOSERVER_WEBDAV_ROOT: "+webDavRoot);
 	}
 
 	@Override
