@@ -105,12 +105,12 @@ public class ServletSecurityFilter implements Filter {
 								// e.g.
 								// /service/tms/1.0.0/u60a6de07-49b4-476c-9361-654955898f55:Partfield_20210305T08_18_27_taskdata@EPSG%3A900913@pbf/14/8539/10995.pbf
 								String pathInfo = httpServletRequest.getPathInfo();
-								log.info(pathInfo);
+								log.fine("Path info: "+pathInfo);
 								Matcher m = EXTRACT_WORKSPACE_AND_LAYER.matcher(pathInfo);
 								if (m.matches()) {
 									String workspaceName = m.group(2);
 									String layerName = m.group(3);
-									log.info(workspaceName+" "+layerName);
+									log.fine("Variables: "+workspaceName+" "+layerName);
 									checkOrSetUpGeoServerWorkspaceStoreAndLayer(workspaceName, layerName, bearerToken);
 								}
 							} else {
