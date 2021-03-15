@@ -99,10 +99,9 @@ public class ServletSecurityFilter implements Filter {
 							((HttpServletResponse) response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 						} else {
 							log.fine("Success\n");
-							log.info(httpServletRequest.getServletPath());
 							// Example Url
 							// http://localhost:8080/geoserver/gwc/service/tms/1.0.0/u60a6de07-49b4-476c-9361-654955898f55:Partfield_20210305T08_18_27_taskdata@EPSG%3A900913@pbf/14/8539/10995.pbf
-							if (httpServletRequest.getServletPath().equals("/gwc")) {
+							if (httpServletRequest.getRequestURI().startsWith(contextPath + "/web/gwc")) {
 								// e.g.
 								// /service/tms/1.0.0/u60a6de07-49b4-476c-9361-654955898f55:Partfield_20210305T08_18_27_taskdata@EPSG%3A900913@pbf/14/8539/10995.pbf
 								String pathInfo = httpServletRequest.getPathInfo();
