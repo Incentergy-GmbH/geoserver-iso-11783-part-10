@@ -63,7 +63,7 @@ public class ServletSecurityFilter implements Filter {
 	String jwtSecret = System.getenv("GEOSERVER_JWT_SECRET");
 	String webDavRoot = System.getenv("GEOSERVER_WEBDAV_ROOT");
 
-	Pattern EXTRACT_WORKSPACE_AND_LAYER = Pattern.compile("/service/tms/1\\.0\\.0/([^:]*):([^@]*)@.*");
+	Pattern EXTRACT_WORKSPACE_AND_LAYER = Pattern.compile("(/gwc)?/service/tms/1\\.0\\.0/([^:]*):([^@]*)@.*");
 
 	@Autowired
 	Catalog catalog;
@@ -108,8 +108,8 @@ public class ServletSecurityFilter implements Filter {
 								log.info(pathInfo);
 								Matcher m = EXTRACT_WORKSPACE_AND_LAYER.matcher(pathInfo);
 								if (m.matches()) {
-									String workspaceName = m.group(1);
-									String layerName = m.group(2);
+									String workspaceName = m.group(2);
+									String layerName = m.group(3);
 									log.info(workspaceName+" "+layerName);
 									checkOrSetUpGeoServerWorkspaceStoreAndLayer(workspaceName, layerName, bearerToken);
 								}
