@@ -201,7 +201,7 @@ public class ServletSecurityFilter implements Filter {
 					featureTypeInfo.setLatLonBoundingBox(re);
 					featureTypeInfo.setStore(dataStoreInfo);
 					featureTypeInfo.setProjectionPolicy(ProjectionPolicy.NONE);
-					catalog.add(featureTypeIn)fo);
+					catalog.add(featureTypeInfo);
 					layer.setResource(featureTypeInfo);
 					layer.setName(layerLookup);
 					layer.setType(PublishedType.VECTOR);
