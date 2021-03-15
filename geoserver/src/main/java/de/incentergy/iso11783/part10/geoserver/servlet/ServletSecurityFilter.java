@@ -78,6 +78,10 @@ public class ServletSecurityFilter implements Filter {
 			throws IOException, ServletException {
 		if (request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
 			HttpServletRequest httpServletRequest = ((HttpServletRequest) request);
+			if(httpServletRequest.getMethod().equals("OPTIONS")) {
+			    chain.doFilter(request, response);
+			    return;
+			}
 			String contextPath = httpServletRequest.getContextPath();
 			// only do validation if we are in a workspace folder
 			if (!httpServletRequest.getRequestURI().startsWith(contextPath + "/web")
