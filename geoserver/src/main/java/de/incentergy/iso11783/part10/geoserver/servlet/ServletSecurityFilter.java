@@ -140,7 +140,7 @@ public class ServletSecurityFilter implements Filter {
 
 	}
 
-	private void checkOrSetUpGeoServerWorkspaceStoreAndLayer(String workspaceName, String layerName,
+	private synchronized void checkOrSetUpGeoServerWorkspaceStoreAndLayer(String workspaceName, String layerName,
 			String bearerToken) {
 		String workspaceNamespace = "https://www.isoxml-service.de/" + workspaceName;
 		NamespaceInfo namespace = catalog.getFactory().createNamespace();
@@ -178,7 +178,7 @@ public class ServletSecurityFilter implements Filter {
 			log.log(Level.WARNING, "Could not create workspace", e);
 		}
 
-		String layerLookup = layerName;
+		String layerLookup = workspaceName + ":" + layerName;
 		LayerInfo layerInfo = catalog.getLayerByName(layerLookup);
 		// check if layers exists
 		if (layerInfo == null) {
@@ -202,7 +202,7 @@ public class ServletSecurityFilter implements Filter {
 					featureTypeInfo.setProjectionPolicy(ProjectionPolicy.NONE);
 					catalog.add(featureTypeInfo);
 					layer.setResource(featureTypeInfo);
-					layer.setName(layerLookup);
+					layer.setName(layerName);
 					layer.setType(PublishedType.VECTOR);
 					layer.setAdvertised(true);
 					layer.setEnabled(true);
