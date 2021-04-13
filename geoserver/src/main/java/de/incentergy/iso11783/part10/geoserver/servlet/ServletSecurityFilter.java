@@ -88,7 +88,7 @@ public class ServletSecurityFilter implements Filter {
 			if (!httpServletRequest.getRequestURI().startsWith(contextPath + "/web")
 					&& !httpServletRequest.getRequestURI().startsWith(contextPath + "/j_spring_security_check")) {
 				String authHeaderVal = ((HttpServletRequest) request).getHeader("Authorization");
-				log.fine("JWTAuthFilter.authHeaderVal: " + authHeaderVal);
+				log.info("JWTAuthFilter.authHeaderVal: " + authHeaderVal);
 				if (authHeaderVal != null && authHeaderVal.startsWith("Bearer")) {
 					try {
 						String bearerToken = authHeaderVal.substring(7);
@@ -98,19 +98,19 @@ public class ServletSecurityFilter implements Filter {
 								.startsWith(contextPath + "/" + arExternal_Id.asString())) {
 							((HttpServletResponse) response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 						} else {
-							log.fine("Success\n");
+							log.info("Success\n");
 							// Example Url
 							// http://localhost:8080/geoserver/gwc/service/tms/1.0.0/u60a6de07-49b4-476c-9361-654955898f55:Partfield_20210305T08_18_27_taskdata@EPSG%3A900913@pbf/14/8539/10995.pbf
 							if (httpServletRequest.getRequestURI().startsWith(contextPath + "/gwc")) {
 								// e.g.
 								// /service/tms/1.0.0/u60a6de07-49b4-476c-9361-654955898f55:Partfield_20210305T08_18_27_taskdata@EPSG%3A900913@pbf/14/8539/10995.pbf
 								String pathInfo = httpServletRequest.getPathInfo();
-								log.fine("Path info: "+pathInfo);
+								log.info("Path info: "+pathInfo);
 								Matcher m = EXTRACT_WORKSPACE_AND_LAYER.matcher(pathInfo);
 								if (m.matches()) {
 									String workspaceName = m.group(2);
 									String layerName = m.group(3);
-									log.fine("Variables: "+workspaceName+" "+layerName);
+									log.info("Variables: "+workspaceName+" "+layerName);
 									checkOrSetUpGeoServerWorkspaceStoreAndLayer(workspaceName, layerName, bearerToken);
 								}
 							} else {
@@ -178,14 +178,15 @@ public class ServletSecurityFilter implements Filter {
 			log.log(Level.WARNING, "Could not create workspace", e);
 		}
 
-		String layerLookup = workspaceName + ":" + layerName;
-		LayerInfo layerInfo = catalog.getLayerByName(layerLookup);
+        Name fullLayerName = new NameImpl(workspaceNamespace, layerName);
+
+		LayerInfo layerInfo = catalog.getLayerByName(fullLayerName);
 		// check if layers exists
 		if (layerInfo == null) {
 			LayerInfo layer = new LayerInfoImpl();
 			FeatureType featureType;
 			try {
-				featureType = dataAccess.getSchema(new NameImpl(workspaceNamespace, layerName));
+				featureType = dataAccess.getSchema(fullLayerName);
 				if (featureType != null) {
 					FeatureTypeInfo featureTypeInfo = catalog.getFactory().createFeatureType();
 					featureTypeInfo.setEnabled(true);
@@ -195,7 +196,13 @@ public class ServletSecurityFilter implements Filter {
 					CoordinateReferenceSystem crs = CRS.decode("EPSG:4326");
 					featureTypeInfo.setNativeCRS(crs);
 					featureTypeInfo.setSRS("EPSG:4326");
-					ReferencedEnvelope re = new ReferencedEnvelope(-180.0, 180.0, -90.0, 90.0, crs);
+
+                    ReferencedEnvelope re = dataAccess
+                        .getFeatureSource(new NameImpl(workspaceNamespace, layerName))
+                        .getBounds();
+                    if (re == null) {
+					    re = new ReferencedEnvelope(-180.0, 180.0, -90.0, 90.0, crs);
+                    }
 					featureTypeInfo.setNativeBoundingBox(re);
 					featureTypeInfo.setLatLonBoundingBox(re);
 					featureTypeInfo.setStore(dataStoreInfo);
