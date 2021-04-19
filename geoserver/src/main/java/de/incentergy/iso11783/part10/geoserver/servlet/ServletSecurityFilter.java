@@ -1,11 +1,7 @@
 package de.incentergy.iso11783.part10.geoserver.servlet;
 
-import static org.geoserver.gwc.GWC.tileLayerName;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -21,34 +17,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.geoserver.catalog.Catalog;
-import org.geoserver.catalog.DataStoreInfo;
-import org.geoserver.catalog.FeatureTypeInfo;
-import org.geoserver.catalog.LayerInfo;
-import org.geoserver.catalog.NamespaceInfo;
-import org.geoserver.catalog.ProjectionPolicy;
-import org.geoserver.catalog.PublishedType;
-import org.geoserver.catalog.WorkspaceInfo;
-import org.geoserver.catalog.impl.DataStoreInfoImpl;
-import org.geoserver.catalog.impl.LayerInfoImpl;
-import org.geoserver.catalog.impl.WorkspaceInfoImpl;
-import org.geoserver.gwc.GWC;
-import org.geoserver.gwc.layer.GeoServerTileLayer;
-import org.geoserver.gwc.layer.GeoServerTileLayerInfo;
-import org.geoserver.gwc.layer.GeoServerTileLayerInfoImpl;
-import org.geotools.data.DataAccess;
-import org.geotools.feature.NameImpl;
-import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.geotools.referencing.CRS;
-import org.geowebcache.grid.GridSetBroker;
-import org.geowebcache.mime.MimeException;
-import org.geowebcache.mime.MimeType;
-import org.opengis.feature.Feature;
-import org.opengis.feature.type.FeatureType;
-import org.opengis.feature.type.Name;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.support.SpringBeanAutowiringSupport;
+
+import de.incentergy.iso11783.part10.geoserver.LazyLayerCreator;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
@@ -76,160 +48,71 @@ public class ServletSecurityFilter implements Filter {
 
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-			throws IOException, ServletException {
-		if (request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
-			HttpServletRequest httpServletRequest = ((HttpServletRequest) request);
-			if(httpServletRequest.getMethod().equals("OPTIONS")) {
-			    chain.doFilter(request, response);
-			    return;
-			}
-			String contextPath = httpServletRequest.getContextPath();
-			// only do validation if we are in a workspace folder
-			if (!httpServletRequest.getRequestURI().startsWith(contextPath + "/web")
-					&& !httpServletRequest.getRequestURI().startsWith(contextPath + "/j_spring_security_check")) {
-				String authHeaderVal = ((HttpServletRequest) request).getHeader("Authorization");
-				log.info("JWTAuthFilter.authHeaderVal: " + authHeaderVal);
-				if (authHeaderVal != null && authHeaderVal.startsWith("Bearer")) {
-					try {
-						String bearerToken = authHeaderVal.substring(7);
-						DecodedJWT jwtPrincipal = validate(bearerToken);
-						Claim arExternal_Id = jwtPrincipal.getClaim("ar_externalId");
-						if (!arExternal_Id.isNull() && !httpServletRequest.getRequestURI()
-								.startsWith(contextPath + "/" + arExternal_Id.asString())) {
-							((HttpServletResponse) response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-						} else {
-							log.info("Success\n");
-							// Example Url
-							// http://localhost:8080/geoserver/gwc/service/tms/1.0.0/u60a6de07-49b4-476c-9361-654955898f55:Partfield_20210305T08_18_27_taskdata@EPSG%3A900913@pbf/14/8539/10995.pbf
-							if (httpServletRequest.getRequestURI().startsWith(contextPath + "/gwc")) {
-								// e.g.
-								// /service/tms/1.0.0/u60a6de07-49b4-476c-9361-654955898f55:Partfield_20210305T08_18_27_taskdata@EPSG%3A900913@pbf/14/8539/10995.pbf
-								String pathInfo = httpServletRequest.getPathInfo();
-								log.info("Path info: "+pathInfo);
-								Matcher m = EXTRACT_WORKSPACE_AND_LAYER.matcher(pathInfo);
-								if (m.matches()) {
-									String workspaceName = m.group(2);
-									String layerName = m.group(3);
-									log.info("Variables: "+workspaceName+" "+layerName);
-									checkOrSetUpGeoServerWorkspaceStoreAndLayer(workspaceName, layerName, bearerToken);
-								}
-							} else {
-								String layers = ((HttpServletRequest) request).getParameter("layers");
-								String typeName = ((HttpServletRequest) request).getParameter("typeName");
+        throws IOException, ServletException 
+    {
+		if (!(request instanceof HttpServletRequest && response instanceof HttpServletResponse)) {
+            chain.doFilter(request, response);
+            return;
+        }
 
-								checkOrSetUpGeoServerWorkspaceStoreAndLayer("u" + arExternal_Id.asString(),
-										layers != null ? layers : typeName, bearerToken);
+        HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+        HttpServletResponse httpServletResponse = (HttpServletResponse) response;
+        String contextPath = httpServletRequest.getContextPath();
 
-							}
-							chain.doFilter(request, response);
-						}
-					} catch (Exception ex) {
-						log.log(Level.WARNING, "Failed setting security context", ex);
-						ex.printStackTrace();
-						((HttpServletResponse) response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        if (httpServletRequest.getMethod().equals("OPTIONS") ||
+            httpServletRequest.getRequestURI().startsWith(contextPath + "/web") ||
+            httpServletRequest.getRequestURI().startsWith(contextPath + "/j_spring_security_check")
+        ) {
+            chain.doFilter(request, response);
+            return;
+        }
 
-					}
-				} else {
-					log.info("Failed due to missing Authorization bearer token");
-					((HttpServletResponse) response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-				}
-			} else {
-				chain.doFilter(request, response);
-			}
-		}
+        String authHeaderVal = httpServletRequest.getHeader("Authorization");
+        log.info("JWTAuthFilter.authHeaderVal: " + authHeaderVal);
+        if (authHeaderVal == null || !authHeaderVal.startsWith("Bearer")) {
+            log.info("Failed due to missing Authorization bearer token");
+            httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
 
-	}
+        try {
+            String bearerToken = authHeaderVal.substring(7);
+            DecodedJWT jwtPrincipal = validate(bearerToken);
+            Claim arExternal_Id = jwtPrincipal.getClaim("ar_externalId");
 
-	private synchronized void checkOrSetUpGeoServerWorkspaceStoreAndLayer(String workspaceName, String layerName,
-			String bearerToken) {
-		String workspaceNamespace = "https://www.isoxml-service.de/" + workspaceName;
-		NamespaceInfo namespace = catalog.getFactory().createNamespace();
-		namespace.setPrefix(workspaceName);
-		namespace.setURI(workspaceNamespace);
+            String gwcURIRoot = contextPath + "/gwc/service/tms/1.0.0/";
 
-		WorkspaceInfo workspaceInfo = catalog.getWorkspaceByName(workspaceName);
-		if (workspaceName == null) {
-			workspaceName = "null";
-		}
-		// check if workspace exists
-		if (workspaceInfo == null) {
-			workspaceInfo = catalog.getFactory().createWorkspace();
-			workspaceInfo.setName(workspaceName);
-			// create workspace
-			namespace.setIsolated(false);
-			catalog.add(workspaceInfo);
-			catalog.add(namespace);
+            if (!httpServletRequest.getRequestURI().startsWith(gwcURIRoot)) {
+                chain.doFilter(request, response);
+                return;
+            }
 
-			// create data store
-			DataStoreInfo dataStoreInfo = catalog.getFactory().createDataStore();
-			dataStoreInfo.setName("ISOXML");
-			dataStoreInfo.getConnectionParameters().put("isoxmlUrl",
-					webDavRoot + workspaceName.substring(1) + "/INCOMING/");
-			dataStoreInfo.getConnectionParameters().put("authorization_header_bearer", bearerToken);
-			dataStoreInfo.setEnabled(true);
-			dataStoreInfo.setWorkspace(workspaceInfo);
-			catalog.add(dataStoreInfo);
-		}
-		DataStoreInfo dataStoreInfo = catalog.getDataStoreByName(workspaceInfo, "ISOXML");
-		DataAccess<? extends FeatureType, ? extends Feature> dataAccess = null;
-		try {
-			dataAccess = dataStoreInfo.getDataStore(null);
-		} catch (IOException e) {
-			log.log(Level.WARNING, "Could not create workspace", e);
-		}
+            if (!arExternal_Id.isNull() && 
+                !httpServletRequest.getRequestURI().startsWith(gwcURIRoot + "u" + arExternal_Id.asString())
+            ) {
+                httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
 
-        Name fullLayerName = new NameImpl(workspaceNamespace, layerName);
+            log.info("Success\n");
+            // Example Url
+            // http://localhost:8080/geoserver/gwc/service/tms/1.0.0/u60a6de07-49b4-476c-9361-654955898f55:Partfield_20210305T08_18_27_taskdata@EPSG%3A900913@pbf/14/8539/10995.pbf
+            String pathInfo = httpServletRequest.getPathInfo();
+            log.info("Path info: "+pathInfo);
+            Matcher m = EXTRACT_WORKSPACE_AND_LAYER.matcher(pathInfo);
+            if (m.matches()) {
+                String workspaceName = m.group(2);
+                String layerName = m.group(3);
+                log.info("Variables: "+workspaceName+" "+layerName);
+                LazyLayerCreator.checkOrSetUpGeoServerWorkspaceStoreAndLayer(catalog, workspaceName, layerName, bearerToken);
+            }
+            chain.doFilter(request, response);
+        } catch (Exception ex) {
+            log.log(Level.WARNING, "Failed setting security context", ex);
+            ex.printStackTrace();
+            ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-		LayerInfo layerInfo = catalog.getLayerByName(fullLayerName);
-		// check if layers exists
-		if (layerInfo == null) {
-			LayerInfo layer = new LayerInfoImpl();
-			FeatureType featureType;
-			try {
-				featureType = dataAccess.getSchema(fullLayerName);
-				if (featureType != null) {
-					FeatureTypeInfo featureTypeInfo = catalog.getFactory().createFeatureType();
-					featureTypeInfo.setEnabled(true);
-					featureTypeInfo.setName(layerName);
-					featureTypeInfo.setEnabled(true);
-					featureTypeInfo.setNamespace(catalog.getNamespaceByURI(workspaceNamespace));
-					CoordinateReferenceSystem crs = CRS.decode("EPSG:4326");
-					featureTypeInfo.setNativeCRS(crs);
-					featureTypeInfo.setSRS("EPSG:4326");
-
-                    ReferencedEnvelope re = dataAccess
-                        .getFeatureSource(new NameImpl(workspaceNamespace, layerName))
-                        .getBounds();
-                    if (re == null) {
-					    re = new ReferencedEnvelope(-180.0, 180.0, -90.0, 90.0, crs);
-                    }
-					featureTypeInfo.setNativeBoundingBox(re);
-					featureTypeInfo.setLatLonBoundingBox(re);
-					featureTypeInfo.setStore(dataStoreInfo);
-					featureTypeInfo.setProjectionPolicy(ProjectionPolicy.NONE);
-					catalog.add(featureTypeInfo);
-					layer.setResource(featureTypeInfo);
-					layer.setName(layerName);
-					layer.setType(PublishedType.VECTOR);
-					layer.setAdvertised(true);
-					layer.setEnabled(true);
-					catalog.add(layer);
-
-					final GWC gwc = GWC.get();
-					final boolean tileLayerExists = gwc.hasTileLayer(layer);
-					if (tileLayerExists) {
-						GeoServerTileLayer tileLayer = (GeoServerTileLayer) gwc
-								.getTileLayerByName(workspaceName + ":" + layer.getName());
-						tileLayer.getInfo().getMimeFormats().add("application/vnd.mapbox-vector-tile");
-						gwc.save(tileLayer);
-					}
-				} else {
-					log.warning("Did not find featureType: " + layerName);
-				}
-			} catch (IOException | FactoryException e) {
-				log.log(Level.WARNING, "Could not create layer", e);
-			}
-		}
+        }
 	}
 
 	private DecodedJWT validate(String bearerToken) throws IllegalArgumentException, UnsupportedEncodingException {

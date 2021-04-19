@@ -43,4 +43,18 @@
 	    </filter-mapping>
 	]]></value>
     </add>
+    <add>
+    	<before>/web-app/servlet-mapping</before>
+    	<value><![CDATA[
+            <servlet>
+                <servlet-name>isoxml-creator</servlet-name>
+                <servlet-class>de.incentergy.iso11783.part10.geoserver.servlet.CreateLayersServlet</servlet-class>
+            </servlet>
+            
+            <servlet-mapping>
+                <servlet-name>isoxml-creator</servlet-name>
+                <url-pattern>/isoxml-create</url-pattern>
+            </servlet-mapping>
+	]]></value>
+    </add>
 </processor>
