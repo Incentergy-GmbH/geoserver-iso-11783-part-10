@@ -55,6 +55,16 @@
                 <servlet-name>isoxml-creator</servlet-name>
                 <url-pattern>/isoxml-create</url-pattern>
             </servlet-mapping>
+
+            <servlet>
+                <servlet-name>isoxml-upload</servlet-name>
+                <servlet-class>de.incentergy.iso11783.part10.geoserver.servlet.UploadFileServlet</servlet-class>
+            </servlet>
+            
+            <servlet-mapping>
+                <servlet-name>isoxml-upload</servlet-name>
+                <url-pattern>/isoxml-upload</url-pattern>
+            </servlet-mapping>
 	]]></value>
     </add>
 </processor>
