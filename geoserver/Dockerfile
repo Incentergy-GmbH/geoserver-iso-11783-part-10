@@ -1,4 +1,4 @@
 FROM tomcat:9.0-jdk11
-ADD target/geoserver.war /opt/tomcat/webapps/geoserver.war
+ADD target/geoserver.war /usr/local/tomcat/webapps/geoserver.war
 
-CMD /opt/tomcat/bin/deploy-and-run.sh
+CMD ["catalina.sh", "run"]
