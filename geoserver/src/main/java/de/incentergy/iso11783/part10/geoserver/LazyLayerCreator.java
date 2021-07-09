@@ -74,6 +74,10 @@ public class LazyLayerCreator {
 			localDataStoreInfo.setEnabled(true);
 			localDataStoreInfo.setWorkspace(workspaceInfo);
 			catalog.add(localDataStoreInfo);
+		} else {
+			// Update bearer token in data store
+			DataStoreInfo dataStoreInfo = catalog.getDataStoreByName(workspaceInfo, "ISOXML");
+			dataStoreInfo.getConnectionParameters().put("authorization_header_bearer", bearerToken);
 		}
         Name fullLayerName = new NameImpl(workspaceNamespace, layerName);
 
