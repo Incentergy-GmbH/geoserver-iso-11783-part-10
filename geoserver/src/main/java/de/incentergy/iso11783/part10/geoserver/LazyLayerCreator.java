@@ -1,8 +1,8 @@
 package de.incentergy.iso11783.part10.geoserver;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.logging.Logger;
-import java.util.Optional;
 import java.util.logging.Level;
 
 import org.geoserver.catalog.Catalog;
@@ -16,6 +16,7 @@ import org.geoserver.catalog.WorkspaceInfo;
 import org.geoserver.catalog.impl.LayerInfoImpl;
 import org.geoserver.gwc.GWC;
 import org.geoserver.gwc.layer.GeoServerTileLayer;
+import org.geoserver.security.decorators.ReadOnlyDataStore;
 import org.geotools.data.DataAccess;
 import org.geotools.feature.NameImpl;
 import org.geotools.geometry.jts.ReferencedEnvelope;
@@ -25,6 +26,8 @@ import org.opengis.feature.type.FeatureType;
 import org.opengis.feature.type.Name;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+
+import de.incentergy.iso11783.part10.geotools.ISO11783DataStore;
 
 public class LazyLayerCreator {
 
@@ -77,8 +80,18 @@ public class LazyLayerCreator {
 		} else {
 			// Update bearer token in data store
 			DataStoreInfo dataStoreInfo = catalog.getDataStoreByName(workspaceInfo, "ISOXML");
-			dataStoreInfo.getConnectionParameters().put("authorization_header_bearer", bearerToken);
-			catalog.save(dataStoreInfo);
+            Serializable currentBearer = dataStoreInfo.getConnectionParameters().get("authorization_header_bearer");
+            if (!currentBearer.equals(bearerToken)) {
+                try {
+                    ReadOnlyDataStore dataStoreWrapper = (ReadOnlyDataStore)dataStoreInfo.getDataStore(null);
+                    ISO11783DataStore dataStore = dataStoreWrapper.unwrap(ISO11783DataStore.class);
+                    dataStore.updateBearerToken(bearerToken);
+                } catch (IOException e) {
+                    log.log(Level.WARNING, "Can't find the schema", e);
+                }
+                dataStoreInfo.getConnectionParameters().put("authorization_header_bearer", bearerToken);
+                catalog.save(dataStoreInfo);
+            }
 		}
         Name fullLayerName = new NameImpl(workspaceNamespace, layerName);
 
