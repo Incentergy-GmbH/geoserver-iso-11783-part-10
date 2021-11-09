@@ -1,6 +1,6 @@
 [submodule "jaxb-iso-11783-part-10"]
 	path = jaxb-iso-11783-part-10
-	url = https://github.com/Incentergy-GmbH/jaxb-iso-11783-part-10.git
+	url = https://github.com/dev4Agriculture/jaxb-iso-11783-part-10.git
 [submodule "geo-tools-iso-11783-part-10"]
 	path = geo-tools-iso-11783-part-10
-	url = https://github.com/Incentergy-GmbH/geo-tools-iso-11783-part-10
+	url = https://github.com/dev4Agriculture/geo-tools-iso-11783-part-10
