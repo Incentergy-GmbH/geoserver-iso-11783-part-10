@@ -18,6 +18,14 @@ mvn jetty:run
 # Stores -> Add new Store -> ISOXML in Memory
 ```
 
+## Debugging
+
+```
+# Debugger will run on port 4000 and start will wait until you connected
+export MAVEN_OPTS='-Xdebug -Xrunjdwp:transport=dt_socket,address=4000,server=y,suspend=y'
+mvn jetty:run
+```
+
 For enabling cors, using the same workspace all the time, JWT token checking and auto configuration based on requests you can use the tomcat-cors-security profile.
 
 ```
