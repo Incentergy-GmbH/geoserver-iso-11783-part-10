@@ -69,7 +69,14 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.4</version>
-        </dependency>
+    </dependency>
+	    <!-- https://mvnrepository.com/artifact/org.opendaylight.controller.thirdparty/org.apache.catalina.filters.CorsFilter -->
+<dependency>
+    <groupId>org.opendaylight.controller.thirdparty</groupId>
+    <artifactId>org.apache.catalina.filters.CorsFilter</artifactId>
+    <version>7.0.42</version>
+</dependency>
+
 	</dependencies>
 	<build>
 		<finalName>${project.artifactId}</finalName>
@@ -86,15 +93,8 @@
 				<configuration>
 					<webApp>
 						<allowDuplicateFragmentNames>true</allowDuplicateFragmentNames>
+						<descriptor>${project.build.directory}/transformed/web.xml</descriptor>
 					</webApp>
-					<scanIntervalSeconds>10</scanIntervalSeconds>
-					<connectors>
-						<connector
-							implementation="org.mortbay.jetty.nio.SelectChannelConnector">
-							<port>8080</port>
-							<maxIdleTime>60000</maxIdleTime>
-						</connector>
-					</connectors>
 				</configuration>
 			</plugin>
 			<plugin>
