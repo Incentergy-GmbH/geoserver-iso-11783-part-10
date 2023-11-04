@@ -10,6 +10,7 @@ git clone --recurse-submodules https://github.com/Incentergy-GmbH/geoserver-iso-
 cd geoserver-iso-11783-part-10
 mvn install
 cd geoserver 
+export JAVA_TOOL_OPTIONS="-Dorg.slf4j.simpleLogger.log.org.eclipse.jetty.annotations.AnnotationParser=ERROR"
 mvn jetty:run
 # go to http://localhost:8080/web/
 # Username: admin Password: geoserver
