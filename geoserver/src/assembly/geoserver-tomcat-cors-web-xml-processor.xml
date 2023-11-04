@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <processor>
     <add>
-        <after>/web-app/context-param</after>
+        <after>/webapp:web-app/webapp:context-param</after>
         <value><![CDATA[
             <context-param>
 	           <param-name>GEOSERVER_DATA_DIR</param-name>
@@ -31,7 +31,7 @@
     </add>
     <add>
     	<!-- Our filter must run before the filterChainProxy because we modify the security -->
-    	<after>/web-app/filter-mapping[filter-name/text() = 'xFrameOptionsFilter']</after>
+    	<after>/webapp:web-app/webapp:filter-mapping[webapp:filter-name/text() = 'xFrameOptionsFilter']</after>
     	<value><![CDATA[
             <filter-mapping>
 		        <filter-name>cross-origin</filter-name>
@@ -44,7 +44,7 @@
 	]]></value>
     </add>
     <add>
-    	<before>/web-app/servlet-mapping</before>
+    	<before>/webapp:web-app/webapp:servlet-mapping</before>
     	<value><![CDATA[
             <servlet>
                 <servlet-name>isoxml-creator</servlet-name>
