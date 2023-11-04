@@ -71,11 +71,11 @@
             <version>2.4</version>
     </dependency>
 	    <!-- https://mvnrepository.com/artifact/org.opendaylight.controller.thirdparty/org.apache.catalina.filters.CorsFilter -->
-<dependency>
-    <groupId>org.opendaylight.controller.thirdparty</groupId>
-    <artifactId>org.apache.catalina.filters.CorsFilter</artifactId>
-    <version>7.0.42</version>
-</dependency>
+    <dependency>
+	    <groupId>com.thetransactioncompany</groupId>
+	    <artifactId>cors-filter</artifactId>
+	    <version>3.0</version>
+    </dependency>
 
 	</dependencies>
 	<build>
