@@ -32,4 +32,11 @@ For enabling cors, using the same workspace all the time, JWT token checking and
 mvn -P tomcat-cors-security install
 ```
 
+## Screenshots
+
 ![](img/new-data-store.png)
+![](img/vector-tiles.png)
+![](img/PFD.png)
+![](img/Timelog.png)
+![](img/geoserver-config-qgis.png)
+![](img/qgis.png)
