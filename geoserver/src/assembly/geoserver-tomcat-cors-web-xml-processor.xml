@@ -31,7 +31,7 @@
     </add>
     <add>
     	<!-- Our filter must run before the filterChainProxy because we modify the security -->
-    	<after>/web-app/filter-mapping[filter-name/text() = 'Request Logging Filter']</after>
+    	<after>/web-app/filter-mapping[filter-name/text() = 'xFrameOptionsFilter']</after>
     	<value><![CDATA[
             <filter-mapping>
 		        <filter-name>cross-origin</filter-name>
