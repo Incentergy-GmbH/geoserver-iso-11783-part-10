@@ -9,17 +9,13 @@
 	        </context-param> 
             <filter>
 		      <filter-name>cross-origin</filter-name>
-		      <filter-class>org.apache.catalina.filters.CorsFilter</filter-class>
+		      <filter-class>com.thetransactioncompany.cors.CORSFilter</filter-class>
 		      <init-param>
-		        <param-name>cors.allowed.origins</param-name>
-		        <param-value>*</param-value>
-		      </init-param>
-		      <init-param>
-		        <param-name>cors.allowed.methods</param-name>
+		        <param-name>cors.supportedMethods</param-name>
 		        <param-value>GET,POST,PUT,DELETE,HEAD,OPTIONS</param-value>
 		      </init-param>
 		      <init-param>
-		        <param-name>cors.allowed.headers</param-name>
+		        <param-name>cors.supportedHeaders</param-name>
 		        <param-value>Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization</param-value>
 		      </init-param>
 		    </filter>
